@@ -55,9 +55,7 @@ uFBAoutput = buildUFBAmodel(model, uFBAvariables);
 
 
 %% Test output
-model_ufba = ufba2fba(uFBAoutput.model);
-
-sol = optimizeCbModel(model_ufba);
+sol = optimizeCbModel(uFBAoutput.model);
 
 if sol.f > 0.225 && sol.f < 0.235
     x = 1;

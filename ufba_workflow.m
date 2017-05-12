@@ -31,7 +31,7 @@ clear;clc
 %   model           modified iAB-RBC-283 COBRA model structure
 %   time            time points (in days)
 %   uFBAvariables   input for uFBA algorithm
-% initCobraToolbox();
+initCobraToolbox();
 load sample_data;
 
 changeCobraSolver('gurobi7', 'LP');
@@ -66,8 +66,6 @@ uFBAoutput = buildUFBAmodel(model, uFBAvariables);
 
 
 %% Test output
-model_ufba = ufba2fba(uFBAoutput.model);
-
-optimizeCbModel(model_ufba)
+model_ufba = optimizeCbModel(uFBAoutput.model)
 
 
