@@ -3,39 +3,39 @@ function [output] = buildUFBAmodel(model,variables)
 %       1) removing all exchange reactions (retains sinks and demands)
 %       2) setting rate of change of measured metabolites
 %       3) adding additional sinks to ensure the model simulates
-% 
+%
 % INPUTS
 %   model           COBRA model structure
 %   variables       struct containing the following required fields:
-%       metNames        cell array of mets for modification -- those that 
+%       metNames        cell array of mets for modification -- those that
 %                           have measurements (corresponding to model.mets)
-%       changeSlopes    vector (length(metNames) x 1) that contains the 
+%       changeSlopes    vector (length(metNames) x 1) that contains the
 %                           rate of change (slope) of mets in metNames
 %       changeIntervals vector (length(metNames) x 1) that contains the 95%
 %                           confidence interval of slopes in changeSlopes
 %       ignoreSlopes    binary vector (length(metNames) x 1) that instructs
 %                           specific slopes to be ignored (ignore if 1)
-%       objRxn          objective reaction (corresponding to model.rxns)
-%   
+%
 % OPTIONAL INPUTS
 %   variables       struct containing the following optional fields:
-%       metNoSink       cell array of metabolites that should not have a 
-%                           sink added, typically for mets where the 
+%       objRxn          objective reaction (corresponding to model.rxns)
+%       metNoSink       cell array of metabolites that should not have a
+%                           sink added, typically for mets where the
 %                           concentration is known to be 0 (default = empty
 %                           cell array, {})
 %       metNoSinkUp     cell array of metabolites that should not have a
 %                           sink added in the up direction (default = empty
 %                           cell array, {})
-%       metNoSinkDown   cell array of metabolites that should not have a 
-%                           sink added in the down direction (default = 
+%       metNoSinkDown   cell array of metabolites that should not have a
+%                           sink added in the down direction (default =
 %                           empty cell array, {})
-%       conflictingMets     cell array of intracellular metabolites 
-%                           (corresponding to model.mets) that conflict 
-%                           with extracellular rates (default = empty cell 
+%       conflictingMets     cell array of intracellular metabolites
+%                           (corresponding to model.mets) that conflict
+%                           with extracellular rates (default = empty cell
 %                           array, {})
-%       neededSinks     cell array of metabolites (corresponding to 
-%                           model.mets) that must have a sink at all times 
-%                           due to unknown degradation (default = empty 
+%       neededSinks     cell array of metabolites (corresponding to
+%                           model.mets) that must have a sink at all times
+%                           due to unknown degradation (default = empty
 %                           cell array, {})
 %       solvingStrategy one of {'case1','case2','case3','case4','case5'}
 %                           (default = 'case2')
@@ -45,9 +45,9 @@ function [output] = buildUFBAmodel(model,variables)
 %       timeLimit       time limit for solver (default = 30 seconds)
 %       eWeight         weighting for preferential selection of
 %                           extracellular sinks over intracellular (default
-%                           = 1e6); if no weighting preferred, then set 
+%                           = 1e6); if no weighting preferred, then set
 %                           eWeight = 1
-% 
+%
 % OUTPUTS
 %   output          struct containing the following outputs
 %       model           constrained uFBA model
@@ -55,7 +55,7 @@ function [output] = buildUFBAmodel(model,variables)
 %       relaxedNodes    cell array which contains which metabolites had a
 %                           sink reaction added to model, the direction of
 %                           the sink, and the bound of the sink reaction
-% 
+%
 % Aarash Bordbar, James Yurkovich 8/26/2015
 
 
@@ -110,14 +110,14 @@ else
     ignoreSlopes = variables.ignoreSlopes;
 end
 
+% parse variable struct for optional fields (if not present, then default
+%   value used)
 if ~isfield(variables,'objRxn')
-    error('Field does not exist: variables.objRxn')
+    objRxn = model.rxns(find(model.c));
 else
     objRxn = variables.objRxn;
 end
 
-% parse variable struct for optional fields (if not present, then default 
-%   value used)
 if ~isfield(variables,'metNoSink')
     metNoSink = {};
 else
@@ -130,7 +130,7 @@ else
     metNoSinkUp = variables.metNoSinkUp;
 end
 
-if~isfield(variables,'metNoSinkDown')
+if ~isfield(variables,'metNoSinkDown')
     metNoSinkDown = {};
 else
     metNoSinkDown = variables.metNoSinkDown;
@@ -249,13 +249,13 @@ for i = 1:length(metsToUse)
     [~,tmpComp] = strtok(tmpMet,'[');
     metLoc1 = findMetIDs(tmpModel,strcat(tmpMet,'_G'));
     metLoc2 = findMetIDs(tmpModel,strcat(tmpMet,'_L'));
-    
+
     % Add Constraints
     tmpModel.b(metLoc1) = tmpSlope-tmpI;
     tmpModel.csense(metLoc1) = 'G';
     tmpModel.b(metLoc2) = tmpSlope+tmpI;
     tmpModel.csense(metLoc2) = 'L';
-    
+
     % Certain metabolites can only be taken up and exo to endo values do not
     % match, use exo data (assumed to be better than endo data)
     if length(intersect(tmpMet,conflictingMets)) > 0 && ...
@@ -279,7 +279,7 @@ for i = 1:length(metsToUse)
         newMetLoc2 = findMetIDs(tmpModel,strcat(newTmpMet,'_L'));
         tmpModel.b(newMetLoc1) = -tmpSlope - tmpI;
         tmpModel.csense(newMetLoc1) = 'G';
-        
+
         tmpModel.b(newMetLoc2) = -tmpSlope + tmpI;
         tmpModel.csense(newMetLoc2) = 'L';
     end
@@ -334,7 +334,7 @@ for i = 1:numIterations
     for l = 1:mIC/2, MILPproblem.vartype(end+1,1) = 'B'; end
     MILPproblem.osense = 1;
     MILPproblem.x0 = [];
-    
+
     switch solvingStrategy
         case 'case1'
             changeCobraSolver('gurobi7','MILP');
@@ -342,7 +342,7 @@ for i = 1:numIterations
                 zeros(numSinkRxns,1);
                 ones(numSinkRxns,1);
                 zeros(mIC/2,1)];
-            
+
             % weight [e] mets preferentially over [c] mets
             targetIndices = length(model.rxns) + numSinkRxns + 1 : length(model.rxns) + numSinkRxns * 2;
             cMetIndices = [];
@@ -354,14 +354,14 @@ for i = 1:numIterations
                 end
             end
             MILPproblem.c(targetIndices(cMetIndices)) = MILPproblem.c(targetIndices(cMetIndices)) * eWeight;
-            tmpSol=solveCobraMILP(MILPproblem,'timeLimit',timeLimit); 
+            tmpSol=solveCobraMILP(MILPproblem,'timeLimit',timeLimit);
         case 'case2'
             changeCobraSolver('gurobi7','LP');
             MILPproblem.c = [zeros(length(model.rxns),1);
                 ones(numSinkRxns,1);
                 zeros(numSinkRxns,1);
                 zeros(mIC/2,1)];
-            
+
             % weight [e] mets preferentially over [c] mets
             targetIndices = length(model.rxns) + 1 : length(model.rxns) + numSinkRxns;
             cMetIndices = [];
@@ -380,7 +380,7 @@ for i = 1:numIterations
                 ones(numSinkRxns,1);
                 zeros(numSinkRxns,1);
                 zeros(mIC/2,1)];
-            
+
             % weight [e] mets preferentially over [c] mets
             targetIndices = 1 : length(model.rxns) + numSinkRxns;
             cMetIndices = [];
@@ -403,7 +403,7 @@ for i = 1:numIterations
                 zeros(numSinkRxns,n),speye(numSinkRxns,numSinkRxns),zeros(numSinkRxns,numSinkRxns),zeros(numSinkRxns,mIC/2);
                 zeros(numSinkRxns,n),zeros(numSinkRxns,numSinkRxns),zeros(numSinkRxns,numSinkRxns),zeros(numSinkRxns,mIC/2);
                 zeros(mIC/2,n+numSinkRxns+numSinkRxns+mIC/2)];
-            
+
             % weight [e] mets preferentially over [c] mets
             targetIndices = n + 1 : n + numSinkRxns;
             fMetIndices = [];
@@ -427,7 +427,7 @@ for i = 1:numIterations
                 zeros(numSinkRxns,n),speye(numSinkRxns,numSinkRxns),zeros(numSinkRxns,numSinkRxns),zeros(numSinkRxns,mIC/2);
                 zeros(numSinkRxns,n),zeros(numSinkRxns,numSinkRxns),zeros(numSinkRxns,numSinkRxns),zeros(numSinkRxns,mIC/2);
                 zeros(mIC/2,n+numSinkRxns+numSinkRxns+mIC/2)];
-            
+
             % weight [e] mets preferentially over [c] mets
             targetIndices = 1 : n + numSinkRxns;
             fMetIndices = [];
@@ -444,7 +444,7 @@ for i = 1:numIterations
         otherwise
             error('Not a valid solver option.')
     end
-    
+
     tmpSol.int = tmpSol.full(n + numSinkRxns + 1:end-mIC/2);
     intCut1 = [intCut1;double(tmpSol.int'==1);double(tmpSol.int' == 0)];
     intCut2 = [intCut2,sparse(size(intCut2,1),1);
@@ -476,7 +476,7 @@ switch solvingStrategy
         MILPproblem.c = [zeros(length(model.rxns),1);
             zeros(numSinkRxns,1);
             numIterations + 1 - total];
-        
+
         % weight [e] mets preferentially over [c] mets
         targetIndices = length(model.rxns) + numSinkRxns + 1 : length(model.rxns) + numSinkRxns * 2;
         cMetIndices = [];
@@ -493,7 +493,7 @@ switch solvingStrategy
         MILPproblem.c = [zeros(length(model.rxns),1);
             numIterations + 1 - total;
             zeros(numSinkRxns,1)];
-        
+
         % weight [e] mets preferentially over [c] mets
         targetIndices = length(model.rxns) + 1 : length(model.rxns) + numSinkRxns;
         cMetIndices = [];
@@ -510,7 +510,7 @@ switch solvingStrategy
         MILPproblem.c = [ones(length(model.rxns),1);
             numIterations + 1 - total;
             zeros(numSinkRxns,1)];
-        
+
         % weight [e] mets preferentially over [c] mets
         targetIndices = 1 : length(model.rxns) + numSinkRxns;
         cMetIndices = [];
@@ -530,7 +530,7 @@ switch solvingStrategy
         MILPproblem.F = [zeros(n,n),zeros(n,numSinkRxns), zeros(n,numSinkRxns);
             zeros(numSinkRxns,n),spdiags(numIterations + 1 - total,0,speye(numSinkRxns)),zeros(numSinkRxns,numSinkRxns);
             zeros(numSinkRxns,n),zeros(numSinkRxns,numSinkRxns),zeros(numSinkRxns,numSinkRxns)];
-        
+
         % weight [e] mets preferentially over [c] mets
         targetIndices = n + 1 : n + numSinkRxns;
         fMetIndices = [];
@@ -552,7 +552,7 @@ switch solvingStrategy
         MILPproblem.F = [speye(n,n),zeros(n,numSinkRxns),zeros(n,numSinkRxns);
             zeros(numSinkRxns,n),spdiags(numIterations + 1 - total,0,speye(numSinkRxns)),zeros(numSinkRxns,numSinkRxns);
             zeros(numSinkRxns,n),zeros(numSinkRxns,numSinkRxns),zeros(numSinkRxns,numSinkRxns)];
-        
+
         % weight [e] mets preferentially over [c] mets
         targetIndices = 1 : n + numSinkRxns;
         fMetIndices = [];
@@ -592,7 +592,7 @@ try
     tmpSol.x(end) = 1;
 catch
     warning('Sinks with very low bounds required for model to simulate.');
-    
+
     sinkRxnsToKeep = uFBAmodel.rxns(find(finalSol.int)+length(model.rxns));
     toRemove = setdiff(uFBAmodel.rxns(length(model.rxns)+1:end),sinkRxnsToKeep);
     tmpModel = removeRxns(uFBAmodel,toRemove);
@@ -601,24 +601,24 @@ tmpModel.c = zeros(length(tmpModel.c),1);
 
 if strcmp(solvingStrategy,'case1') || strcmp(solvingStrategy,'case2') || strcmp(solvingStrategy,'case3')
     changeCobraSolver('gurobi7','LP');
-    
+
     tmpModel.c(length(model.c)+1:end) = 1;
     tmpSol = optimizeCbModel(tmpModel,'min');
     tmpModel.ub(length(model.c)+1:end) = tmpSol.x(length(model.c)+1:end) * lambda;
 else
     changeCobraSolver('gurobi7','QP');
-    
+
     tmpProb.A = tmpModel.S;
     tmpProb.b = tmpModel.b;
     tmpProb.c = tmpModel.c;
-    
+
     tmpProb.lb = tmpModel.lb;
     tmpProb.ub = tmpModel.ub;
-    
+
     tmpProb.csense = tmpModel.csense;
     tmpProb.osense = 1;
     tmpProb.x0 = [];
-    
+
     if strcmp(solvingStrategy,'case4')
         tmpProb.F = [zeros(n,n), zeros(n,length(sinkRxnsToKeep));
             zeros(length(sinkRxnsToKeep),n),speye(length(sinkRxnsToKeep))];
@@ -626,7 +626,7 @@ else
         tmpProb.F = [speye(n,n), zeros(n,length(sinkRxnsToKeep));
             zeros(length(sinkRxnsToKeep),n),speye(length(sinkRxnsToKeep))];
     end
-    
+
     tmpSol = solveCobraQP(tmpProb);
     tmpSol.int = tmpSol.full(n + numSinkRxns + 1:end);
     tmpModel.ub(length(model.c)+1:end) = tmpSol.full(length(model.c)+1:end) * lambda;
@@ -648,7 +648,7 @@ for i = 2:length(sinkRxnsToKeep)+1
     [tmp1,tmp2] = strtok(tmp,']');
     tmp1 = strcat(tmp1,tmp2(1));
     tmp2 = tmp2(2:end);
-    
+
     relaxedNodes{i,1} = tmp1;
     relaxedNodes{i,2} = tmp2(2:end);
     relaxedNodes{i,3} = sinkRxnsBounds(i-1);
