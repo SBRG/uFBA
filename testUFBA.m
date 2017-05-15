@@ -113,3 +113,5 @@ uFBAoutput = buildUFBAmodel(model, uFBAvariables);
 sol = optimizeCbModel(uFBAoutput.model);
 
 assert(sol.f > 0.225 & sol.f < 0.235, 'Solution incorrect to 2 decimals.')
+
+x = true;
