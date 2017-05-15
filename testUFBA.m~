@@ -78,18 +78,22 @@ for i = 1:length(met_IDs)
     
     % compute 95% confidence intervals
     [Q, R] = qr([time ones(length(time), 1)], 0);
-    yint = R \ (Q' * met_data(:, i));
-    rmse = norm(met_data(:, i) - [time ones(length(time), 1)] * yint) / sqrt(78);
-    tval = tinv((1 - 0.05 / 2), 78);
-    err = rmse * sqrt(sum(abs(R \ eye(2)) .^ 2, 2));
-    tmp2 = [yint - tval * err, yint + tval * err];
+    b = R \ (Q' * met_data(:, i));
+    RI = R \ eye(2);
+    yhat = [time ones(length(time), 1)] * b;
+    r = met_data(:, i) - yhat;
+    normr = norm(r);
+    rmse = normr / sqrt(78);
+    tval = tinv((1 - alpha / 2),78);
+    s2 = rmse^2;
+    se = rmse*sqrt(sum(abs(RI) .^ 2, 2));
+    tmp2 = [b - tval * se, b + tval * se];
         
     % IF STATISTICS TOOLBOX INSTALLED,
     % USE THE REGRESS COMMAND:
-%     [tmp1, tmp2] = regress(met_data(:, i), [time ones(length(time), 1)], 0.05);
-    
-    changeSlopes(i, 1) = tmp1(1);
-    changeIntervals(i, 1) = abs(changeSlopes(i, 1) - tmp2(1));
+    [tmp1, tmp2] = regress(met_data(:, i), [time ones(length(time), 1)], 0.05);
+%     changeSlopes(i, 1) = tmp1(1);
+%     changeIntervals(i, 1) = abs(changeSlopes(i, 1) - tmp2(1));
 end
 
 

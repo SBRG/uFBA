@@ -43,7 +43,22 @@ changeCobraSolver('gurobi7', 'MILP');
 changeSlopes = zeros(length(met_IDs), 1);
 changeIntervals = zeros(length(met_IDs), 1);
 for i = 1:length(met_IDs)
-    [tmp1, tmp2] = regress(met_data(:, i), [time ones(length(time), 1)], 0.05);
+    % IF STATISTICS TOOLBOX IS NOT INSTALLED, 
+    % PERFORM LINEAR REGRESSION MANUALLY:
+    tmp1 = [time ones(length(time), 1)] \ met_data(:, i);
+    
+    % compute 95% confidence intervals
+    [Q, R] = qr([time ones(length(time), 1)], 0);
+    yint = R \ (Q' * met_data(:, i));
+    rmse = norm(met_data(:, i) - [time ones(length(time), 1)] * yint) / sqrt(78);
+    tval = tinv((1 - 0.05 / 2), 78);
+    err = rmse * sqrt(sum(abs(R \ eye(2)) .^ 2, 2));
+    tmp2 = [yint - tval * err, yint + tval * err];
+        
+    % IF STATISTICS TOOLBOX INSTALLED,
+    % USE THE REGRESS COMMAND:
+%     [tmp1, tmp2] = regress(met_data(:, i), [time ones(length(time), 1)], 0.05);
+    
     changeSlopes(i, 1) = tmp1(1);
     changeIntervals(i, 1) = abs(changeSlopes(i, 1) - tmp2(1));
 end
