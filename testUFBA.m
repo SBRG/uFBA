@@ -59,9 +59,9 @@ else
     error('Data loaded incorrectly.')
 end
 
-if changeCobraSolver('gurobi7', 'LP') || changeCobraSolver('gurobi7', 'MILP')
-    changeCobraSolver('gurobi7', 'LP');
-    changeCobraSolver('gurobi7', 'MILP');
+if changeCobraSolver('gurobi', 'LP') || changeCobraSolver('gurobi', 'MILP')
+    changeCobraSolver('gurobi', 'LP');
+    changeCobraSolver('gurobi', 'MILP');
 else
     warning('Gurobi not installed; uFBA algorithm not guaranteed to function properly.')
 end

@@ -34,8 +34,8 @@ clear;clc
 initCobraToolbox();
 load sample_data;
 
-changeCobraSolver('gurobi7', 'LP');
-changeCobraSolver('gurobi7', 'MILP');
+changeCobraSolver('gurobi', 'LP');
+changeCobraSolver('gurobi', 'MILP');
 
 
 %% Linear regression
